@@ -1,0 +1,412 @@
+import React, { useState } from 'react';
+import { Plus, Trash2, Save, LogOut, Church, User } from 'lucide-react';
+import { User as UserType, FamilyMember } from '../types';
+
+interface DataEntryFormProps {
+  user: UserType;
+  onLogout: () => void;
+}
+
+const DataEntryForm: React.FC<DataEntryFormProps> = ({ user, onLogout }) => {
+  const [formData, setFormData] = useState({
+    memberName: '',
+    email: '',
+    address: '',
+    phoneNumber: '',
+    alternatePhone: '',
+    festival: '',
+    fees: 0,
+    denomination: '',
+    paymentMode: '',
+    paymentStatus: '',
+  });
+
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([
+    { id: '1', name: '', relationship: '' }
+  ]);
+
+  // Mock dynamic options - in real app, these would come from form builder
+  const festivals = ['Christmas', 'Easter', 'Thanksgiving', 'New Year'];
+  const denominations = ['$50', '$100', '$150', '$200'];
+  const paymentModes = ['Cash', 'Check', 'Credit Card', 'Bank Transfer'];
+  const paymentStatuses = ['Paid', 'Pending', 'Overdue'];
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+
+    // Auto-fill fees based on festival
+    if (name === 'festival') {
+      const feeMap: { [key: string]: number } = {
+        'Christmas': 150,
+        'Easter': 120,
+        'Thanksgiving': 100,
+        'New Year': 130,
+      };
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+        fees: feeMap[value] || 0,
+      }));
+    }
+  };
+
+  const handleFamilyMemberChange = (id: string, field: keyof FamilyMember, value: string) => {
+    setFamilyMembers(familyMembers.map(member =>
+      member.id === id ? { ...member, [field]: value } : member
+    ));
+  };
+
+  const addFamilyMember = () => {
+    const newMember: FamilyMember = {
+      id: Date.now().toString(),
+      name: '',
+      relationship: '',
+    };
+    setFamilyMembers([...familyMembers, newMember]);
+  };
+
+  const removeFamilyMember = (id: string) => {
+    if (familyMembers.length > 1) {
+      setFamilyMembers(familyMembers.filter(member => member.id !== id));
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    alert('Church member data submitted successfully!');
+    // Reset form
+    setFormData({
+      memberName: '',
+      email: '',
+      address: '',
+      phoneNumber: '',
+      alternatePhone: '',
+      festival: '',
+      fees: 0,
+      denomination: '',
+      paymentMode: '',
+      paymentStatus: '',
+    });
+    setFamilyMembers([{ id: '1', name: '', relationship: '' }]);
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-4xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                <Church className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-semibold text-gray-900">Grace Church</h1>
+                <p className="text-sm text-gray-600">Member Data Entry</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                  <User className="h-4 w-4 text-gray-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-900">{user.name}</span>
+              </div>
+              <button
+                onClick={onLogout}
+                className="text-gray-600 hover:text-gray-800 flex items-center space-x-1 transition-colors"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="text-sm">Logout</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Form */}
+      <div className="max-w-4xl mx-auto px-6 py-8">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Church Member Data Form</h2>
+            <p className="text-gray-600">Please fill in all the required information</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-8">
+            {/* A. Basic Information */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                A. Basic Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="memberName" className="block text-sm font-medium text-gray-700 mb-2">
+                    Member Name *
+                  </label>
+                  <input
+                    type="text"
+                    id="memberName"
+                    name="memberName"
+                    value={formData.memberName}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    placeholder="Enter full name"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+                    Email Address *
+                  </label>
+                  <input
+                    type="email"
+                    id="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    placeholder="Enter email address"
+                    required
+                  />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-2">
+                    Address *
+                  </label>
+                  <textarea
+                    id="address"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleInputChange}
+                    rows={3}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    placeholder="Enter complete address"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* B. Contact Information */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                B. Contact Information
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700 mb-2">
+                    Phone Number *
+                  </label>
+                  <input
+                    type="tel"
+                    id="phoneNumber"
+                    name="phoneNumber"
+                    value={formData.phoneNumber}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    placeholder="Enter phone number"
+                    required
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="alternatePhone" className="block text-sm font-medium text-gray-700 mb-2">
+                    Alternate Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    id="alternatePhone"
+                    name="alternatePhone"
+                    value={formData.alternatePhone}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    placeholder="Enter alternate phone number"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* C. Family Members Section */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                C. Family Members Section
+              </h3>
+              <div className="space-y-4">
+                {familyMembers.map((member, index) => (
+                  <div key={member.id} className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-md font-medium text-gray-900">Family Member {index + 1}</h4>
+                      {familyMembers.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeFamilyMember(member.id)}
+                          className="text-red-600 hover:text-red-800 p-1 rounded-md hover:bg-red-50 transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Name
+                        </label>
+                        <input
+                          type="text"
+                          value={member.name}
+                          onChange={(e) => handleFamilyMemberChange(member.id, 'name', e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                          placeholder="Enter family member name"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Relationship
+                        </label>
+                        <input
+                          type="text"
+                          value={member.relationship}
+                          onChange={(e) => handleFamilyMemberChange(member.id, 'relationship', e.target.value)}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                          placeholder="e.g., Spouse, Child, Parent"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                <button
+                  type="button"
+                  onClick={addFamilyMember}
+                  className="flex items-center space-x-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Add Another Family Member</span>
+                </button>
+              </div>
+            </div>
+
+            {/* D. Festival & Payment Details */}
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                D. Festival & Payment Details
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label htmlFor="festival" className="block text-sm font-medium text-gray-700 mb-2">
+                    Festival *
+                  </label>
+                  <select
+                    id="festival"
+                    name="festival"
+                    value={formData.festival}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    required
+                  >
+                    <option value="">Select Festival</option>
+                    {festivals.map((festival) => (
+                      <option key={festival} value={festival}>{festival}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="fees" className="block text-sm font-medium text-gray-700 mb-2">
+                    Fees
+                  </label>
+                  <input
+                    type="number"
+                    id="fees"
+                    name="fees"
+                    value={formData.fees}
+                    readOnly
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
+                    placeholder="Auto-filled based on festival"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="denomination" className="block text-sm font-medium text-gray-700 mb-2">
+                    Denomination *
+                  </label>
+                  <select
+                    id="denomination"
+                    name="denomination"
+                    value={formData.denomination}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    required
+                  >
+                    <option value="">Select Denomination</option>
+                    {denominations.map((denom) => (
+                      <option key={denom} value={denom}>{denom}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="paymentMode" className="block text-sm font-medium text-gray-700 mb-2">
+                    Mode of Payment *
+                  </label>
+                  <select
+                    id="paymentMode"
+                    name="paymentMode"
+                    value={formData.paymentMode}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    required
+                  >
+                    <option value="">Select Payment Mode</option>
+                    {paymentModes.map((mode) => (
+                      <option key={mode} value={mode}>{mode}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="md:col-span-2">
+                  <label htmlFor="paymentStatus" className="block text-sm font-medium text-gray-700 mb-2">
+                    Payment Status *
+                  </label>
+                  <select
+                    id="paymentStatus"
+                    name="paymentStatus"
+                    value={formData.paymentStatus}
+                    onChange={handleInputChange}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    required
+                  >
+                    <option value="">Select Payment Status</option>
+                    {paymentStatuses.map((status) => (
+                      <option key={status} value={status}>{status}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Submit Button */}
+            <div className="pt-6">
+              <button
+                type="submit"
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center space-x-2"
+              >
+                <Save className="h-5 w-5" />
+                <span>Submit Church Data</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DataEntryForm;
