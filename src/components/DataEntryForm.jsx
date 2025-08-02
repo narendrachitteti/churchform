@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ReactWhatsapp from 'react-whatsapp';
 import { Plus, Trash2, Save, LogOut, Church, User } from 'lucide-react';
 
 const DataEntryForm = ({ user, onLogout }) => {
@@ -31,7 +32,7 @@ const DataEntryForm = ({ user, onLogout }) => {
 
   React.useEffect(() => {
     // Fetch latest form schema from backend
-    fetch('http://localhost:5000/api/forms')
+    fetch('https://church-backendform.vercel.app/api/forms')
       .then(res => res.json())
       .then(forms => {
         if (forms && forms.length > 0) {
@@ -85,6 +86,10 @@ const DataEntryForm = ({ user, onLogout }) => {
     }
   };
 
+  const [lastEntryId, setLastEntryId] = useState(null);
+  const [whatsappStatus, setWhatsappStatus] = useState(null);
+  const [whatsappData, setWhatsappData] = useState(null);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -95,14 +100,25 @@ const DataEntryForm = ({ user, onLogout }) => {
       };
       // Optionally add user id if needed by backend
       // entryData.user = user.id;
-      const response = await fetch('http://localhost:5000/api/entries', {
+      const response = await fetch('https://church-backendform.vercel.app/api/entries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(entryData),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Submission failed');
-      alert('Church member data submitted successfully!');
+      setLastEntryId(data.entryId);
+      setWhatsappStatus(null);
+      // Build message with all entered details
+      const details = Object.entries(formData)
+        .filter(([key, val]) => val)
+        .map(([key, val]) => `${key}: ${val}`)
+        .join('\n');
+      setWhatsappData({
+        phone: formData.phoneNumber,
+        message: `Hello ${formData.memberName}, your church entry has been saved!\nEntry ID: ${data.entryId}\n\nDetails:\n${details}`
+      });
+      alert(`Church member data submitted successfully!\nYour Entry ID: ${data.entryId}`);
       // Reset form
       setFormData({
         memberName: '',
@@ -118,6 +134,7 @@ const DataEntryForm = ({ user, onLogout }) => {
       });
       setFamilyMembers([{ id: '1', name: '', relationship: '' }]);
     } catch (err) {
+      setWhatsappStatus(null);
       alert(err.message);
     }
   };
@@ -166,6 +183,20 @@ const DataEntryForm = ({ user, onLogout }) => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-8">
+            {lastEntryId && (
+              <div className="mb-4 p-4 bg-green-50 border border-green-300 rounded-lg text-green-800">
+                <strong>Entry ID:</strong> {lastEntryId}<br />
+                {whatsappData && whatsappData.phone && (
+                  <ReactWhatsapp
+                    number={whatsappData.phone}
+                    message={whatsappData.message}
+                    className="mt-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                  >
+                    Send WhatsApp Confirmation
+                  </ReactWhatsapp>
+                )}
+              </div>
+            )}
             {/* A. Basic Information */}
             <div>
               <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">

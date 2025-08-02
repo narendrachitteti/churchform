@@ -6,7 +6,7 @@ const ViewMembersPage = ({ user, onNavigate, onLogout }) => {
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    fetch('http://localhost:5000/api/entries')
+    fetch('https://church-backendform.vercel.app/api/entries')
       .then(res => res.json())
       .then(data => {
         setEntries(data);

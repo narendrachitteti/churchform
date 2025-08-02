@@ -15,7 +15,7 @@ const ManageUsersPage = ({ user, onNavigate, onLogout }) => {
 
   // Fetch users from backend
   React.useEffect(() => {
-    fetch('http://localhost:5000/api/users')
+    fetch('https://church-backendform.vercel.app/api/users')
       .then(res => res.json())
       .then(data => setDataEntryUsers(data.map(u => ({
         ...u,
@@ -39,7 +39,7 @@ const ManageUsersPage = ({ user, onNavigate, onLogout }) => {
   const handleDeleteUser = async (userId) => {
     if (window.confirm('Are you sure you want to delete this user?')) {
       try {
-        const res = await fetch(`http://localhost:5000/api/users/${userId}`, { method: 'DELETE' });
+        const res = await fetch(`https://church-backendform.vercel.app/api/users/${userId}`, { method: 'DELETE' });
         if (!res.ok) throw new Error('Delete failed');
         setDataEntryUsers(dataEntryUsers.filter(u => u.id !== userId));
       } catch (err) {
@@ -53,7 +53,7 @@ const ManageUsersPage = ({ user, onNavigate, onLogout }) => {
     try {
       if (editingUser) {
         // Update existing user
-        const res = await fetch(`http://localhost:5000/api/users/${editingUser.id}`, {
+        const res = await fetch(`https://church-backendform.vercel.app/api/users/${editingUser.id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: formData.name, email: formData.email }),
@@ -63,7 +63,7 @@ const ManageUsersPage = ({ user, onNavigate, onLogout }) => {
         setDataEntryUsers(dataEntryUsers.map(u => u.id === editingUser.id ? { ...u, ...updated } : u));
       } else {
         // Add new user
-        const res = await fetch('http://localhost:5000/api/users', {
+        const res = await fetch('https://church-backendform.vercel.app/api/users', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: formData.name, email: formData.email, password: formData.password }),

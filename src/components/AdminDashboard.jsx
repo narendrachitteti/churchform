@@ -14,8 +14,8 @@ const AdminDashboard = ({ user, onNavigate, onLogout }) => {
   React.useEffect(() => {
     // Fetch stats and recent entries from backend
     Promise.all([
-      fetch('http://localhost:5000/api/entries').then(res => res.json()),
-      fetch('http://localhost:5000/api/forms').then(res => res.json()),
+      fetch('https://church-backendform.vercel.app/api/entries').then(res => res.json()),
+      fetch('https://church-backendform.vercel.app/api/forms').then(res => res.json()),
     ]).then(([entries, forms]) => {
       // Calculate stats
       const totalMembers = entries.length;

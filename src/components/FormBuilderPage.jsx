@@ -38,7 +38,7 @@ const FormBuilderPage = ({ user, onNavigate, onLogout }) => {
 
   const saveSchema = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/forms', {
+      const response = await fetch('https://church-backendform.vercel.app/api/forms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: 'Church Member Data Form', fields: formFields }),
