@@ -26,9 +26,9 @@ const DataEntryForm = ({ user, onLogout }) => {
 
   // Mock dynamic options - fallback if not present in schema
   const festivals = ['Christmas', 'Easter', 'Thanksgiving', 'New Year'];
-  const denominations = ['$', '₹'];
+  const denominations = ['INR'];
   const paymentModes = ['Cash', 'Check', 'Credit Card', 'UPI', 'Bank Transfer'];
-  const paymentStatuses = ['Paid', 'Pending'];
+  const paymentStatuses = ['Paid', 'Pending','Part-payment'];
 
   React.useEffect(() => {
     // Fetch latest form schema from backend
