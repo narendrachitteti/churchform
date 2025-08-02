@@ -19,11 +19,27 @@ const DataEntryForm = ({ user, onLogout }) => {
     { id: '1', name: '', relationship: '' }
   ]);
 
-  // Mock dynamic options - in real app, these would come from form builder
+
+  // Dynamic fields from form builder
+  const [dynamicFields, setDynamicFields] = useState([]);
+
+  // Mock dynamic options - fallback if not present in schema
   const festivals = ['Christmas', 'Easter', 'Thanksgiving', 'New Year'];
-  const denominations = ['$50', '$100', '$150', '$200'];
-  const paymentModes = ['Cash', 'Check', 'Credit Card', 'Bank Transfer'];
-  const paymentStatuses = ['Paid', 'Pending', 'Overdue'];
+  const denominations = ['$', '₹'];
+  const paymentModes = ['Cash', 'Check', 'Credit Card', 'UPI', 'Bank Transfer'];
+  const paymentStatuses = ['Paid', 'Pending'];
+
+  React.useEffect(() => {
+    // Fetch latest form schema from backend
+    fetch('http://localhost:5000/api/forms')
+      .then(res => res.json())
+      .then(forms => {
+        if (forms && forms.length > 0) {
+          // Use the latest form schema
+          setDynamicFields(forms[forms.length - 1].fields || []);
+        }
+      });
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -69,23 +85,41 @@ const DataEntryForm = ({ user, onLogout }) => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    alert('Church member data submitted successfully!');
-    // Reset form
-    setFormData({
-      memberName: '',
-      email: '',
-      address: '',
-      phoneNumber: '',
-      alternatePhone: '',
-      festival: '',
-      fees: 0,
-      denomination: '',
-      paymentMode: '',
-      paymentStatus: '',
-    });
-    setFamilyMembers([{ id: '1', name: '', relationship: '' }]);
+    try {
+      // Prepare data for backend
+      const entryData = {
+        data: formData,
+        familyMembers: familyMembers.map(({ id, ...rest }) => rest),
+      };
+      // Optionally add user id if needed by backend
+      // entryData.user = user.id;
+      const response = await fetch('http://localhost:5000/api/entries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(entryData),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Submission failed');
+      alert('Church member data submitted successfully!');
+      // Reset form
+      setFormData({
+        memberName: '',
+        email: '',
+        address: '',
+        phoneNumber: '',
+        alternatePhone: '',
+        festival: '',
+        fees: 0,
+        denomination: '',
+        paymentMode: '',
+        paymentStatus: '',
+      });
+      setFamilyMembers([{ id: '1', name: '', relationship: '' }]);
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
   return (
@@ -385,7 +419,75 @@ const DataEntryForm = ({ user, onLogout }) => {
                 </div>
               </div>
             </div>
-
+              {/* Dynamic Fields from Form Builder */}
+            {dynamicFields.length > 0 && (
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b border-gray-200">
+                  Additional Fields (from Admin Form Builder)
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {dynamicFields.map((field, idx) => {
+                    // Skip if field label already exists in hardcoded fields
+                    if ([
+                      'memberName','email','address','phoneNumber','alternatePhone','festival','fees','denomination','paymentMode','paymentStatus'
+                    ].includes(field.label)) return null;
+                    if (field.type === 'dropdown') {
+                      return (
+                        <div key={idx} className="col-span-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            {field.label}{field.required && <span className="text-red-500 ml-1">*</span>}
+                          </label>
+                          <select
+                            name={field.label}
+                            required={field.required}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                            value={formData[field.label] || ''}
+                            onChange={e => setFormData({ ...formData, [field.label]: e.target.value })}
+                          >
+                            <option value="">Select {field.label}</option>
+                            {field.options?.map((opt, i) => (
+                              <option key={i} value={opt}>{opt}</option>
+                            ))}
+                          </select>
+                        </div>
+                      );
+                    } else if (field.type === 'textarea') {
+                      return (
+                        <div key={idx} className="col-span-2">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            {field.label}{field.required && <span className="text-red-500 ml-1">*</span>}
+                          </label>
+                          <textarea
+                            name={field.label}
+                            required={field.required}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                            value={formData[field.label] || ''}
+                            onChange={e => setFormData({ ...formData, [field.label]: e.target.value })}
+                          />
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <div key={idx} className="col-span-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            {field.label}{field.required && <span className="text-red-500 ml-1">*</span>}
+                          </label>
+                          <input
+                            type={field.type}
+                            name={field.label}
+                            required={field.required}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                            value={formData[field.label] || ''}
+                            onChange={e => setFormData({ ...formData, [field.label]: e.target.value })}
+                            placeholder={`Enter ${field.label}`}
+                          />
+                        </div>
+                      );
+                    }
+                  })}
+                </div>
+              </div>
+            )}
             {/* Submit Button */}
             <div className="pt-6">
               <button
@@ -393,7 +495,7 @@ const DataEntryForm = ({ user, onLogout }) => {
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 px-6 rounded-lg transition-colors duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center space-x-2"
               >
                 <Save className="h-5 w-5" />
-                <span>Submit Church Data</span>
+                <span>Save & Send Church Data</span>
               </button>
             </div>
           </form>

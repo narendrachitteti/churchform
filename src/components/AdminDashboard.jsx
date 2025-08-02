@@ -3,19 +3,47 @@ import { Users, DollarSign, FileText, TrendingUp } from 'lucide-react';
 import Sidebar from './Sidebar';
 
 const AdminDashboard = ({ user, onNavigate, onLogout }) => {
-  const stats = [
-    { title: 'Total Members', value: '1,247', icon: Users, color: 'blue', change: '+12%' },
-    { title: 'Pending Payments', value: '23', icon: DollarSign, color: 'red', change: '-5%' },
-    { title: 'Forms Created', value: '8', icon: FileText, color: 'green', change: '+2' },
-    { title: 'This Month', value: '156', icon: TrendingUp, color: 'purple', change: '+18%' },
-  ];
+  const [stats, setStats] = React.useState([
+    { title: 'Total Members', value: '0', icon: Users, color: 'blue', change: '+0%' },
+    { title: 'Pending Payments', value: '0', icon: DollarSign, color: 'red', change: '0%' },
+    { title: 'Forms Created', value: '0', icon: FileText, color: 'green', change: '+0' },
+    { title: 'This Month', value: '0', icon: TrendingUp, color: 'purple', change: '+0%' },
+  ]);
+  const [recentEntries, setRecentEntries] = React.useState([]);
 
-  const recentEntries = [
-    { id: 1, name: 'John Smith', festival: 'Christmas', amount: '$150', status: 'Paid', date: '2025-01-15' },
-    { id: 2, name: 'Mary Johnson', festival: 'Easter', amount: '$120', status: 'Pending', date: '2025-01-14' },
-    { id: 3, name: 'David Brown', festival: 'Christmas', amount: '$200', status: 'Paid', date: '2025-01-13' },
-    { id: 4, name: 'Sarah Wilson', festival: 'Thanksgiving', amount: '$100', status: 'Pending', date: '2025-01-12' },
-  ];
+  React.useEffect(() => {
+    // Fetch stats and recent entries from backend
+    Promise.all([
+      fetch('http://localhost:5000/api/entries').then(res => res.json()),
+      fetch('http://localhost:5000/api/forms').then(res => res.json()),
+    ]).then(([entries, forms]) => {
+      // Calculate stats
+      const totalMembers = entries.length;
+      const pendingPayments = entries.filter(e => e.data && (e.data.paymentStatus === 'Pending' || e.data.paymentStatus === 'Overdue')).length;
+      const formsCreated = forms.length;
+      // This Month
+      const now = new Date();
+      const thisMonth = entries.filter(e => {
+        const d = new Date(e.createdAt);
+        return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+      }).length;
+      setStats([
+        { title: 'Total Members', value: totalMembers.toString(), icon: Users, color: 'blue', change: '+0%' },
+        { title: 'Pending Payments', value: pendingPayments.toString(), icon: DollarSign, color: 'red', change: '0%' },
+        { title: 'Forms Created', value: formsCreated.toString(), icon: FileText, color: 'green', change: '+0' },
+        { title: 'This Month', value: thisMonth.toString(), icon: TrendingUp, color: 'purple', change: '+0%' },
+      ]);
+      // Recent entries (latest 10)
+      setRecentEntries(entries.slice(-10).reverse().map((e, i) => ({
+        id: e._id || i,
+        name: e.data?.memberName || 'N/A',
+        festival: e.data?.festival || 'N/A',
+        amount: e.data?.fees ? `$${e.data.fees}` : 'N/A',
+        status: e.data?.paymentStatus || 'N/A',
+        date: e.createdAt || new Date().toISOString(),
+      })));
+    });
+  }, []);
 
   return (
     <div className="flex h-screen bg-gray-50">

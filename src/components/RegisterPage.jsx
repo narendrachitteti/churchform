@@ -7,17 +7,33 @@ const RegisterPage = ({ onNavigate }) => {
     email: '',
     password: '',
     confirmPassword: '',
+    role: 'data-entry',
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
       alert('Passwords do not match');
       return;
     }
-    // Handle registration logic here
-    alert('Data Entry Person registered successfully!');
-    onNavigate('login');
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          role: formData.role,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Registration failed');
+      alert(`${formData.role === 'admin' ? 'Admin' : 'Data Entry Person'} registered successfully!`);
+      onNavigate('login');
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
   const handleInputChange = (e) => {
@@ -55,6 +71,25 @@ const RegisterPage = ({ onNavigate }) => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Role Selection */}
+            <div>
+              <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-2">
+                Register As
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-3 h-5 w-5 text-gray-400" />
+                <select
+                  id="role"
+                  name="role"
+                  value={formData.role}
+                  onChange={handleInputChange}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none bg-white"
+                >
+                  <option value="data-entry">Data Entry Person</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+            </div>
             {/* Name Input */}
             <div>
               <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">

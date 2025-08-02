@@ -36,8 +36,18 @@ const FormBuilderPage = ({ user, onNavigate, onLogout }) => {
     setFormFields(formFields.filter(field => field.id !== id));
   };
 
-  const saveSchema = () => {
-    alert('Form schema saved successfully!');
+  const saveSchema = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/forms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Church Member Data Form', fields: formFields }),
+      });
+      if (!response.ok) throw new Error('Failed to save schema');
+      alert('Form schema saved successfully!');
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
   return (

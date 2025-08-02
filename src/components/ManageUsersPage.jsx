@@ -11,12 +11,18 @@ const ManageUsersPage = ({ user, onNavigate, onLogout }) => {
     password: '',
   });
 
-  // Mock data - in real app, this would come from backend
-  const [dataEntryUsers, setDataEntryUsers] = useState([
-    { id: '1', name: 'Alice Johnson', email: 'alice@church.com', role: 'data-entry', dateAdded: '2025-01-10' },
-    { id: '2', name: 'Bob Smith', email: 'bob@church.com', role: 'data-entry', dateAdded: '2025-01-08' },
-    { id: '3', name: 'Carol Brown', email: 'carol@church.com', role: 'data-entry', dateAdded: '2025-01-05' },
-  ]);
+  const [dataEntryUsers, setDataEntryUsers] = useState([]);
+
+  // Fetch users from backend
+  React.useEffect(() => {
+    fetch('http://localhost:5000/api/users')
+      .then(res => res.json())
+      .then(data => setDataEntryUsers(data.map(u => ({
+        ...u,
+        id: u._id,
+      }))))
+      .catch(() => setDataEntryUsers([]));
+  }, []);
 
   const handleAddUser = () => {
     setEditingUser(null);
@@ -30,36 +36,47 @@ const ManageUsersPage = ({ user, onNavigate, onLogout }) => {
     setShowModal(true);
   };
 
-  const handleDeleteUser = (userId) => {
+  const handleDeleteUser = async (userId) => {
     if (window.confirm('Are you sure you want to delete this user?')) {
-      setDataEntryUsers(dataEntryUsers.filter(u => u.id !== userId));
+      try {
+        const res = await fetch(`http://localhost:5000/api/users/${userId}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('Delete failed');
+        setDataEntryUsers(dataEntryUsers.filter(u => u.id !== userId));
+      } catch (err) {
+        alert(err.message);
+      }
     }
   };
 
-  const handleSubmitForm = (e) => {
+  const handleSubmitForm = async (e) => {
     e.preventDefault();
-    
-    if (editingUser) {
-      // Update existing user
-      setDataEntryUsers(dataEntryUsers.map(u => 
-        u.id === editingUser.id 
-          ? { ...u, name: formData.name, email: formData.email }
-          : u
-      ));
-    } else {
-      // Add new user
-      const newUser = {
-        id: Date.now().toString(),
-        name: formData.name,
-        email: formData.email,
-        role: 'data-entry',
-        dateAdded: new Date().toISOString(),
-      };
-      setDataEntryUsers([...dataEntryUsers, newUser]);
+    try {
+      if (editingUser) {
+        // Update existing user
+        const res = await fetch(`http://localhost:5000/api/users/${editingUser.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: formData.name, email: formData.email }),
+        });
+        if (!res.ok) throw new Error('Update failed');
+        const updated = await res.json();
+        setDataEntryUsers(dataEntryUsers.map(u => u.id === editingUser.id ? { ...u, ...updated } : u));
+      } else {
+        // Add new user
+        const res = await fetch('http://localhost:5000/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: formData.name, email: formData.email, password: formData.password }),
+        });
+        if (!res.ok) throw new Error('Add failed');
+        const newUser = await res.json();
+        setDataEntryUsers([...dataEntryUsers, { ...newUser, id: newUser._id }]);
+      }
+      setShowModal(false);
+      setFormData({ name: '', email: '', password: '' });
+    } catch (err) {
+      alert(err.message);
     }
-    
-    setShowModal(false);
-    setFormData({ name: '', email: '', password: '' });
   };
 
   const handleInputChange = (e) => {
