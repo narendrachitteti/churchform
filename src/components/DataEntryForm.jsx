@@ -14,6 +14,7 @@ const DataEntryForm = ({ user, onLogout }) => {
     denomination: '',
     paymentMode: '',
     paymentStatus: '',
+    partPaymentAmount: '',
   });
 
   const [familyMembers, setFamilyMembers] = useState([
@@ -24,11 +25,13 @@ const DataEntryForm = ({ user, onLogout }) => {
   // Dynamic fields from form builder
   const [dynamicFields, setDynamicFields] = useState([]);
 
-  // Mock dynamic options - fallback if not present in schema
-  const festivals = ['Christmas', 'Easter', 'Thanksgiving', 'New Year'];
-  const denominations = ['INR'];
-  const paymentModes = ['Cash', 'Check', 'Credit Card', 'UPI', 'Bank Transfer'];
-  const paymentStatuses = ['Paid', 'Pending','Part-payment'];
+  // Global dropdowns from backend schema
+  const [globalDropdowns, setGlobalDropdowns] = useState({
+    festivals: [],
+    denominations: [],
+    paymentModes: [],
+    paymentStatuses: [],
+  });
 
   React.useEffect(() => {
     // Fetch latest form schema from backend
@@ -36,8 +39,14 @@ const DataEntryForm = ({ user, onLogout }) => {
       .then(res => res.json())
       .then(forms => {
         if (forms && forms.length > 0) {
-          // Use the latest form schema
-          setDynamicFields(forms[forms.length - 1].fields || []);
+          const latest = forms[forms.length - 1];
+          setDynamicFields(latest.fields || []);
+          setGlobalDropdowns({
+            festivals: latest.globalDropdowns?.festivals || [],
+            denominations: latest.globalDropdowns?.denominations || [],
+            paymentModes: latest.globalDropdowns?.paymentModes || [],
+            paymentStatuses: latest.globalDropdowns?.paymentStatuses || [],
+          });
         }
       });
   }, []);
@@ -49,18 +58,13 @@ const DataEntryForm = ({ user, onLogout }) => {
       [name]: value,
     });
 
-    // Auto-fill fees based on festival
+    // Auto-fill fees based on festival (dynamic from backend)
     if (name === 'festival') {
-      const feeMap = {
-        'Christmas': 150,
-        'Easter': 120,
-        'Thanksgiving': 100,
-        'New Year': 130,
-      };
+      const festObj = globalDropdowns.festivals.find(f => f.name === value);
       setFormData(prev => ({
         ...prev,
         [name]: value,
-        fees: feeMap[value] || 0,
+        fees: festObj ? festObj.fee : 0,
       }));
     }
   };
@@ -95,9 +99,13 @@ const DataEntryForm = ({ user, onLogout }) => {
     try {
       // Prepare data for backend
       const entryData = {
-        data: formData,
+       data: {
+    ...formData,
+    partPaymentAmount: formData.paymentStatus === 'Part-payment' ? formData.partPaymentAmount : undefined,
+  },
         familyMembers: familyMembers.map(({ id, ...rest }) => rest),
-      };
+      user: user && user._id ? user._id : undefined, // or user.id
+};
       // Optionally add user id if needed by backend
       // entryData.user = user.id;
       const response = await fetch('https://church-backendform.vercel.app/api/entries', {
@@ -131,6 +139,7 @@ const DataEntryForm = ({ user, onLogout }) => {
         denomination: '',
         paymentMode: '',
         paymentStatus: '',
+        partPaymentAmount: '',
       });
       setFamilyMembers([{ id: '1', name: '', relationship: '' }]);
     } catch (err) {
@@ -371,8 +380,8 @@ const DataEntryForm = ({ user, onLogout }) => {
                     required
                   >
                     <option value="">Select Festival</option>
-                    {festivals.map((festival) => (
-                      <option key={festival} value={festival}>{festival}</option>
+                    {globalDropdowns.festivals.map((festival) => (
+                      <option key={festival.name} value={festival.name}>{festival.name}</option>
                     ))}
                   </select>
                 </div>
@@ -405,7 +414,7 @@ const DataEntryForm = ({ user, onLogout }) => {
                     required
                   >
                     <option value="">Select Denomination</option>
-                    {denominations.map((denom) => (
+                    {globalDropdowns.denominations.map((denom) => (
                       <option key={denom} value={denom}>{denom}</option>
                     ))}
                   </select>
@@ -424,7 +433,7 @@ const DataEntryForm = ({ user, onLogout }) => {
                     required
                   >
                     <option value="">Select Payment Mode</option>
-                    {paymentModes.map((mode) => (
+                    {globalDropdowns.paymentModes.map((mode) => (
                       <option key={mode} value={mode}>{mode}</option>
                     ))}
                   </select>
@@ -443,10 +452,27 @@ const DataEntryForm = ({ user, onLogout }) => {
                     required
                   >
                     <option value="">Select Payment Status</option>
-                    {paymentStatuses.map((status) => (
+                    {globalDropdowns.paymentStatuses.map((status) => (
                       <option key={status} value={status}>{status}</option>
                     ))}
                   </select>
+                  {formData.paymentStatus === 'Part-payment' && (
+                    <div className="mt-4">
+                      <label htmlFor="partPaymentAmount" className="block text-sm font-medium text-gray-700 mb-2">
+                        Amount (for Part-payment)
+                      </label>
+                      <input
+                        type="number"
+                        id="partPaymentAmount"
+                        name="partPaymentAmount"
+                        value={formData.partPaymentAmount}
+                        onChange={handleInputChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                        placeholder="Enter part payment amount"
+                        required
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

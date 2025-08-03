@@ -3,8 +3,32 @@ import { Plus, Eye, Trash2, GripVertical, ChevronDown } from 'lucide-react';
 import Sidebar from './Sidebar';
 
 const FormBuilderPage = ({ user, onNavigate, onLogout }) => {
+  // Fetch latest schema from backend on mount
+  React.useEffect(() => {
+    fetch('https://church-backendform.vercel.app/api/forms')
+      .then(res => res.json())
+      .then(forms => {
+        if (forms && forms.length > 0) {
+          const latest = forms[forms.length - 1];
+          setFormFields(latest.fields || []);
+          setGlobalDropdowns(latest.globalDropdowns || globalDropdowns);
+        }
+      });
+  }, []);
   const [formFields, setFormFields] = useState([]);
   const [showPreview, setShowPreview] = useState(false);
+  // Global dropdowns
+  const [globalDropdowns, setGlobalDropdowns] = useState({
+    festivals: [
+      { name: 'Christmas', fee: 150 },
+      { name: 'Easter', fee: 120 },
+      { name: 'Thanksgiving', fee: 100 },
+      { name: 'New Year', fee: 130 },
+    ],
+    denominations: ['INR'],
+    paymentModes: ['Cash', 'Check', 'Credit Card', 'UPI', 'Bank Transfer'],
+    paymentStatuses: ['Paid', 'Pending', 'Part-payment'],
+  });
 
   const fieldTypes = [
     { value: 'text', label: 'Text Input' },
@@ -41,7 +65,11 @@ const FormBuilderPage = ({ user, onNavigate, onLogout }) => {
       const response = await fetch('https://church-backendform.vercel.app/api/forms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: 'Church Member Data Form', fields: formFields }),
+        body: JSON.stringify({
+          name: 'Church Member Data Form',
+          fields: formFields,
+          globalDropdowns,
+        }),
       });
       if (!response.ok) throw new Error('Failed to save schema');
       alert('Form schema saved successfully!');
@@ -97,6 +125,75 @@ const FormBuilderPage = ({ user, onNavigate, onLogout }) => {
                     <Plus className="h-4 w-4 mx-auto mb-1" />
                     {type.label}
                   </button>
+                ))}
+              </div>
+
+              {/* Global Dropdowns Editor */}
+              <div className="space-y-6 mb-8">
+                <h3 className="text-md font-semibold text-gray-900">Global Dropdowns (Editable by Admin)</h3>
+                {/* Festivals with fee mapping */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Festivals (name and fee)</label>
+                  {globalDropdowns.festivals.map((fest, idx) => (
+                    <div key={idx} className="flex space-x-2 mb-2">
+                      <input
+                        type="text"
+                        value={fest.name}
+                        onChange={e => {
+                          const updated = [...globalDropdowns.festivals];
+                          updated[idx].name = e.target.value;
+                          setGlobalDropdowns({ ...globalDropdowns, festivals: updated });
+                        }}
+                        className="px-2 py-1 border border-gray-300 rounded w-1/2"
+                        placeholder="Festival name"
+                      />
+                      <input
+                        type="number"
+                        value={fest.fee}
+                        onChange={e => {
+                          const updated = [...globalDropdowns.festivals];
+                          updated[idx].fee = Number(e.target.value);
+                          setGlobalDropdowns({ ...globalDropdowns, festivals: updated });
+                        }}
+                        className="px-2 py-1 border border-gray-300 rounded w-1/3"
+                        placeholder="Fee"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = globalDropdowns.festivals.filter((_, i) => i !== idx);
+                          setGlobalDropdowns({ ...globalDropdowns, festivals: updated });
+                        }}
+                        className="px-2 py-1 bg-red-100 text-red-700 rounded"
+                      >Remove</button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setGlobalDropdowns({
+                      ...globalDropdowns,
+                      festivals: [...globalDropdowns.festivals, { name: '', fee: 0 }],
+                    })}
+                    className="mt-2 px-3 py-1 bg-blue-100 text-blue-700 rounded"
+                  >Add Festival</button>
+                </div>
+                {/* Other dropdowns */}
+                {['denominations','paymentModes','paymentStatuses'].map(key => (
+                  <div key={key} className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {key.charAt(0).toUpperCase() + key.slice(1)} (one per line)
+                    </label>
+                    <textarea
+                      value={globalDropdowns[key].join('\n')}
+                      onChange={e => setGlobalDropdowns({
+                        ...globalDropdowns,
+                        [key]: e.target.value.split('\n').filter(opt => opt.trim())
+                      })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      rows={3}
+                      placeholder={`Option 1\nOption 2\nOption 3`}
+                    />
+                  </div>
                 ))}
               </div>
 
@@ -159,7 +256,7 @@ const FormBuilderPage = ({ user, onNavigate, onLogout }) => {
                               })}
                               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                               rows={3}
-                              placeholder="Option 1&#10;Option 2&#10;Option 3"
+                              placeholder="Option 1\nOption 2\nOption 3"
                             />
                           </div>
                         )}

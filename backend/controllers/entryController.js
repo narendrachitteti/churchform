@@ -1,3 +1,4 @@
+
 const Entry = require('../models/Entry');
 
 exports.getEntries = async (req, res) => {
@@ -10,7 +11,18 @@ exports.getEntries = async (req, res) => {
 };
 
 
-
+exports.deleteEntry = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleted = await Entry.findByIdAndDelete(id);
+    if (!deleted) {
+      return res.status(404).json({ error: 'Entry not found' });
+    }
+    res.json({ message: 'Entry deleted' });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
 
 exports.createEntry = async (req, res) => {
   try {
@@ -34,10 +46,20 @@ exports.createEntry = async (req, res) => {
     });
     await entry.save();
 
-
-
     res.status(201).json(entry);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 };
+
+exports.updateEntry = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { data } = req.body;
+    const entry = await Entry.findByIdAndUpdate(id, { data }, { new: true });
+    res.json(entry);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+};
+
